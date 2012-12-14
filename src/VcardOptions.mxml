@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="400" title="Export GPS Coordinate to VCARD">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.sdakin.gps.GPSCoordinate;
+			import com.sdakin.gps.GPSParser;
+			import com.sdakin.vcard.VcardData;
+			
+			import flash.desktop.Clipboard;
+			import flash.desktop.ClipboardFormats;
+			
+			import mx.managers.PopUpManager;
+			import mx.utils.StringUtil;
+			
+			import spark.events.TextOperationEvent;
+			
+			public function set gpsCoordStr(gpsStr:String):void {
+				txtGpsCoord.text = gpsStr;
+				updateVcard();
+			}
+			
+			private function onCopy(event:Event):void {
+				Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, txtVcard.text);
+				lblCopyStatus.text = "VCARD Copied";
+				var clear:Timer = new Timer(2500);
+				clear.addEventListener(TimerEvent.TIMER, clearStatus);
+				clear.start();
+				
+				function clearStatus(event:TimerEvent):void {
+					clear.removeEventListener(TimerEvent.TIMER, clearStatus);
+					clear.stop();
+					lblCopyStatus.text = "";
+				}
+			}
+			
+			private function onNameChanged(event:TextOperationEvent):void {
+				var name:String = "";
+				var addr:String = "";
+				var latlong:String = "";
+				if (txtName.text.substr(0, 4) == "http" && txtName.text.search(/\?/) >= 0) {
+					var parts:Array = txtName.text.split(/\?/);
+					var vars:URLVariables = new URLVariables(parts[1]);
+					if (vars.hasOwnProperty("saddr")) {
+						var saddr:String = vars["saddr"] as String;
+						var delimIndex:int = saddr.search(/,/);
+						if (delimIndex >= 0) {
+							name = saddr.substr(0, delimIndex);
+							addr = StringUtil.trim(saddr.substr(delimIndex + 1));
+						} else
+							name = saddr;
+					}
+					if (vars.hasOwnProperty("q")) name = vars["q"];
+					if (vars.hasOwnProperty("ll")) latlong = vars["ll"];
+					else if (vars.hasOwnProperty("sll")) latlong = vars["sll"];
+					if (name.length > 0) txtName.text = name;
+					if (addr.length > 0) txtAddress.text = addr;
+					if (latlong.length > 0) {
+						var parser:GPSParser = new GPSParser();
+						var coord:GPSCoordinate = parser.parseGPSCoordinate(latlong);
+						txtGpsCoord.text = coord.toString(GPSCoordinate.FORMAT_DECDEG);
+					}
+				}
+				updateVcard();
+			}
+			
+			private function updateVcard():void {
+				var obj:Object = { "FN": txtName.text, "ADR": txtAddress.text, "GEO": txtGpsCoord.text };
+				var vcard:VcardData = VcardData.fromObject(obj);
+				txtVcard.text = vcard.toString();
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" verticalGap="2">
+		<s:Form width="100%" height="137">
+			<s:FormItem width="100%" height="32" label="Name">
+				<s:TextInput id="txtName" width="100%" change="onNameChanged(event)" fontSize="11"/>
+			</s:FormItem>
+			<s:FormItem width="100%" height="44" label="Address">
+				<s:TextInput id="txtAddress" width="100%" change="updateVcard()" fontSize="11"/>
+				<s:Label text="(optional)"/>
+			</s:FormItem>
+			<s:FormItem width="100%" height="30" label="GPS coord">
+				<s:TextInput id="txtGpsCoord" width="100%" change="updateVcard()" fontSize="11"/>
+			</s:FormItem>
+		</s:Form>
+		<mx:HBox width="100%" paddingLeft="10" paddingRight="10">
+			<s:TextInput id="txtVcard" width="100%" height="80" fontSize="10"/>
+			<mx:VBox horizontalAlign="center">
+				<s:Button label="Copy to clipboard" click="onCopy(event)" fontSize="11"/>
+				<s:Label id="lblCopyStatus" fontSize="11"/>
+			</mx:VBox>
+		</mx:HBox>
+		<mx:HBox width="100%" horizontalAlign="right" paddingBottom="5" paddingRight="5"
+				 paddingTop="5">
+			<s:Button label="Done" click="{PopUpManager.removePopUp(this)}"/>
+		</mx:HBox>
+	</mx:VBox>
+</s:Panel>

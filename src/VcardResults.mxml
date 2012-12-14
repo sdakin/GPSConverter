@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="400" height="600" title="VCARD Contents">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			[Bindable] public var vcardString:String;
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="100%" horizontalAlign="right" paddingBottom="5" paddingLeft="5"
+			 paddingRight="5" paddingTop="5">
+		<s:TextArea id="txtResults" width="100%" height="100%" fontSize="10" text="{vcardString}"/>
+		<s:Button label="Close" click="PopUpManager.removePopUp(this)"/>
+	</mx:VBox>
+</s:Panel>
